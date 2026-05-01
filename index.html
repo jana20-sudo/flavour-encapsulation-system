@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FlavorEncap AI — Advanced Spray Drying Encapsulation Platform</title>
+  <link rel="stylesheet" href="style.css"/>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- jsPDF for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── TOOLTIP ──────────────────────────────── -->
+<div id="tooltip"></div>
+
+<!-- ── HEADER ───────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">Flavor<span>Encap</span> AI</div>
+    <div style="font-size:.62rem;color:var(--muted);letter-spacing:.08em">v5 ADVANCED SCIENTIFIC EDITION</div>
+    <div class="header-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusLabel">Initialising…</span>
+    </div>
+    <button class="header-btn" onclick="app.promptForGeminiKey()">🔑 Gemini Key</button>
+    <button class="header-btn" onclick="app.openPDFModal('spray_dryer')">📄 PDF Report</button>
+  </div>
+</header>
+
+<!-- ── HERO ─────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span>⚗</span>
+      <span>Abramzon-Sirignano · Gordon-Taylor · GAB · Weibull · Korsmeyer-Peppas</span>
+    </div>
+    <h1>Flavor Microencapsulation<br/>Intelligence Platform</h1>
+    <p class="hero-sub">
+      AI-powered wall material selection, spray dryer simulation, degradation kinetics, and full process digital twin. Powered by Gemini 2.0 Flash + advanced scientific models.
+    </p>
+
+    <!-- Quick fill compounds -->
+    <div class="quick-fill-bar">
+      <button class="qf-btn" onclick="app.quickFill('limonene')">🍊 Limonene</button>
+      <button class="qf-btn" onclick="app.quickFill('vanillin')">🍦 Vanillin</button>
+      <button class="qf-btn" onclick="app.quickFill('linalool')">🌸 Linalool</button>
+      <button class="qf-btn" onclick="app.quickFill('menthol')">🌿 Menthol</button>
+      <button class="qf-btn" onclick="app.quickFill('cinnamaldehyde')">🌶 Cinnamaldehyde</button>
+      <button class="qf-btn" onclick="app.quickFill('eugenol')">🌲 Eugenol</button>
+      <button class="qf-btn" onclick="app.quickFill('geraniol')">🌹 Geraniol</button>
+      <button class="qf-btn" onclick="app.quickFill('carvone')">🌱 Carvone</button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-wrap">
+      <input
+        type="text"
+        id="compoundInput"
+        class="compound-input"
+        placeholder="Enter any flavor compound — limonene, vanillin, or any name…"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter') app.analyze()"
+      />
+      <button class="analyze-btn" id="analyzeBtn" onclick="app.analyze()">
+        Analyse →
+      </button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="loading-wrap" id="loadingWrap">
+      <div class="loading-spinner"></div>
+      <div class="lsteps">
+        <div class="lstep" id="ls1"><div class="lstep-dot">1</div><span>PubChem</span></div>
+        <div class="lstep" id="ls2"><div class="lstep-dot">2</div><span>AI Model</span></div>
+        <div class="lstep" id="ls3"><div class="lstep-dot">3</div><span>Simulate</span></div>
+        <div class="lstep" id="ls4"><div class="lstep-dot">4</div><span>Render</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     RESULTS — hidden until analysis
+═══════════════════════════════════════════════════════════ -->
+<div id="results" class="hidden">
+<div class="container" style="padding-bottom:4rem">
+
+<!-- ── §1 COMPOUND PROFILE ──────────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num">§1</span>
+    <h2>Compound Profile</h2>
+    <span class="sec-sub">PubChem · IUPAC · Degradation · Fugacity</span>
+  </div>
+  <div id="compoundCard"></div>
+</section>
+
+<!-- ── §2 KPI + SIMULATION DASHBOARD ────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num">§2</span>
+    <h2>Spray Dryer Dashboard</h2>
+    <span class="sec-sub">Live simulation · 16 KPIs · AI insight</span>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card" data-tip="Encapsulation Efficiency — core model output">
+      <div class="kpi-label">EE %</div>
+      <div class="kpi-value" id="kpi-ee">—</div>
+    </div>
+    <div class="kpi-card" data-tip="Powder moisture — psychrometric drying model">
+      <div class="kpi-label">Moisture %</div>
+      <div class="kpi-value" id="kpi-mc">—</div>
+    </div>
+    <div class="kpi-card" data-tip="Flavor loss — Arrhenius thermal + surface evaporation">
+      <div class="kpi-label">Flavor Loss %</div>
+      <div class="kpi-value" id="kpi-loss">—</div>
+    </div>
+    <div class="kpi-card" data-tip="Powder yield — cyclone separation model">
+      <div class="kpi-label">Yield %</div>
+      <div class="kpi-value" id="kpi-yield">—</div>
+    </div>
+    <div class="kpi-card" data-tip="Volume-median diameter — Lefebvre rotary atomizer">
+      <div class="kpi-label">D50 μm</div>
+      <div class="kpi-value" id="kpi-d50">—</div>
+    </div>
+    <div class="kpi-card" data-tip="Glass transition — Gordon-Taylor moisture plasticisation">
+      <div class="kpi-label">Tg °C</div>
+      <div class="kpi-value" id="kpi-tg">—</div>
+    </div>
+  </div>
+
+  <!-- AI Suggestion -->
+  <div class="ai-suggestion-box">
+    <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">AI Process Insight</span><br/>
+    <span id="aiSuggestion" style="color:var(--text2)">Run analysis to generate Gemini 2.0 Flash insight…</span>
+  </div>
+
+  <!-- Simulation cards grid -->
+  <div class="charts-headline" style="margin-top:1.2rem">Simulation Outputs</div>
+  <div class="sim-output-grid" id="simOutputGrid"></div>
+</section>
+
+<!-- ── §3 SPRAY DRYER CONTROLS ──────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num">§3</span>
+    <h2>Spray Dryer Process Controls</h2>
+    <span class="sec-sub">Realtime simulation · 8 parameters · Auto-optimiser</span>
+  </div>
+
+  <div class="sliders-layout">
+    <!-- Left: sliders -->
+    <div class="sliders-col">
+      <div class="ctrl-group">
+
+        <div class="ctrl-row" data-tip="Inlet air temperature — Arrhenius thermal degradation">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Inlet Temperature</span>
+            <span class="ctrl-val" id="val-inlet">170°C</span>
+          </div>
+          <input type="range" id="ctrl-inlet" min="120" max="240" value="170" step="1"
+                 oninput="app.onSliderChange(this,'inlet')"/>
+          <div class="ctrl-impact" id="impact-inlet"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Outlet temperature — controls final powder moisture">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Outlet Temperature</span>
+            <span class="ctrl-val" id="val-outlet">75°C</span>
+          </div>
+          <input type="range" id="ctrl-outlet" min="50" max="110" value="75" step="1"
+                 oninput="app.onSliderChange(this,'outlet')"/>
+          <div class="ctrl-impact" id="impact-outlet"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Feed solid content % — affects viscosity and EE">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Feed Solids Content</span>
+            <span class="ctrl-val" id="val-solids">20%</span>
+          </div>
+          <input type="range" id="ctrl-solids" min="5" max="45" value="20" step="1"
+                 oninput="app.onSliderChange(this,'solids')"/>
+          <div class="ctrl-impact" id="impact-solids"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Feed pH — emulsion stability and EE penalty model">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Feed pH</span>
+            <span class="ctrl-val" id="val-ph">5.0</span>
+          </div>
+          <input type="range" id="ctrl-ph" min="2" max="10" value="5" step="0.1"
+                 oninput="app.onSliderChange(this,'ph')"/>
+          <div class="ctrl-impact" id="impact-ph"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Rotary atomizer speed — Lefebvre PSD equation">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Atomizer Speed (×1000 RPM)</span>
+            <span class="ctrl-val" id="val-atomizer">20k RPM</span>
+          </div>
+          <input type="range" id="ctrl-atomizer" min="8" max="36" value="20" step="1"
+                 oninput="app.onSliderChange(this,'atomizer')"/>
+          <div class="ctrl-impact" id="impact-atomizer"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Inlet air humidity — affects moisture and caking">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Inlet Humidity (% RH)</span>
+            <span class="ctrl-val" id="val-humidity">15%</span>
+          </div>
+          <input type="range" id="ctrl-humidity" min="5" max="60" value="15" step="1"
+                 oninput="app.onSliderChange(this,'humidity')"/>
+          <div class="ctrl-impact" id="impact-humidity"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Target moisture — Gordon-Taylor Tg plasticisation">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Moisture Target (%)</span>
+            <span class="ctrl-val" id="val-moisture">3.5%</span>
+          </div>
+          <input type="range" id="ctrl-moisture" min="1" max="10" value="3.5" step="0.1"
+                 oninput="app.onSliderChange(this,'moisture')"/>
+          <div class="ctrl-impact" id="impact-moisture"></div>
+        </div>
+
+        <div class="ctrl-row" data-tip="Core:Wall ratio — controls EE and surface oil">
+          <div class="ctrl-header">
+            <span class="ctrl-label">Core:Wall Ratio</span>
+            <span class="ctrl-val" id="val-ratio">1:4</span>
+          </div>
+          <input type="range" id="ctrl-ratio" min="1" max="8" value="4" step="0.1"
+                 oninput="app.onSliderChange(this,'ratio')"/>
+          <div class="ctrl-impact" id="impact-ratio"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: optimiser + warnings -->
+    <div class="sliders-right">
+      <button class="optimize-btn" onclick="optimizeAll()">⚡ Bayesian Auto-Optimise (LHS n=80)</button>
+      <button class="save-btn" onclick="saveExperiment()">💾 Save Experiment to History</button>
+
+      <div style="margin-top:1rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.5rem">
+        Smart Warnings Engine
+      </div>
+      <div id="dynamicWarnings" style="display:flex;flex-direction:column;gap:.4rem"></div>
+    </div>
+  </div>
+
+  <!-- 16 Charts -->
+  <div class="charts-headline">Efficiency &amp; Thermal Analysis</div>
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Encapsulation Efficiency by Material</div>
+      <div class="chart-wrap"><canvas id="ch-ee"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">EE &amp; Thermal Loss vs Inlet Temp (Arrhenius)</div>
+      <div class="chart-wrap"><canvas id="ch-eff-temp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Moisture &amp; Sorption</div>
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Moisture &amp; Tg/10 vs Inlet (Gordon-Taylor)</div>
+      <div class="chart-wrap"><canvas id="ch-moisture-temp"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Water Activity (GAB Sorption Model)</div>
+      <div class="chart-wrap"><canvas id="ch-aw"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Release &amp; pH</div>
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">pH-Triggered Release &amp; EE Penalty</div>
+      <div class="chart-wrap"><canvas id="ch-release-ph"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Thermal Release Profile</div>
+      <div class="chart-wrap"><canvas id="ch-release-temp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Particle &amp; Powder Properties</div>
+  <div class="charts-grid-3">
+    <div class="chart-card">
+      <div class="chart-title">PSD D10/D50/D90 by Material (Lefebvre)</div>
+      <div class="chart-wrap"><canvas id="ch-particle"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Surface Oil vs Core:Wall Ratio</div>
+      <div class="chart-wrap"><canvas id="ch-surface-oil"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Bulk Density vs Atomizer RPM</div>
+      <div class="chart-wrap"><canvas id="ch-bulk-density"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Stability &amp; Kinetics</div>
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Storage Retention (12 Month Shelf Life)</div>
+      <div class="chart-wrap"><canvas id="ch-retention"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Glass Transition Tg (Gordon-Taylor Model)</div>
+      <div class="chart-wrap"><canvas id="ch-tg"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Production &amp; Quality</div>
+  <div class="charts-grid-3">
+    <div class="chart-card">
+      <div class="chart-title">Powder Yield vs Solids Content</div>
+      <div class="chart-wrap"><canvas id="ch-yield"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Oxidation Stability Index</div>
+      <div class="chart-wrap"><canvas id="ch-osi"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Psychrometric Chart</div>
+      <div class="chart-wrap"><canvas id="ch-psychro"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-headline">Release Kinetics (4 Models)</div>
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Korsmeyer-Peppas · Weibull · Zero-Order · First-Order</div>
+      <div class="chart-wrap"><canvas id="ch-kinetics"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Cost vs EE Scatter (Material Comparison)</div>
+      <div class="chart-wrap"><canvas id="ch-cost-ee"></canvas></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── §4 WALL MATERIALS ─────────────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num">§4</span>
+    <h2>AI Wall Material Recommendations</h2>
+    <span class="sec-sub">5 ranked materials · Scientific basis · Click to select</span>
+  </div>
+  <div class="materials-grid" id="materialsGrid"></div>
+  <div class="reasoning-box" id="reasoningBox"></div>
+</section>
+
+<!-- ── §5 MATERIAL COMPARISON TABLE ─────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num" style="border-color:rgba(255,107,53,.4);color:var(--accent2)">§5</span>
+    <h2>Material Comparison Table</h2>
+    <span class="sec-sub">EE · Moisture · Particle Size · Cost · Oxidation</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>EE %</th>
+          <th>Moisture %</th>
+          <th>D50 μm</th>
+          <th>Release pH</th>
+          <th>Release T°C</th>
+          <th>Oxidation</th>
+          <th>Cost</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody id="compTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── §6 EQUIPMENT DIGITAL TWIN ────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num" style="border-color:rgba(110,168,255,.4);color:var(--accent3)">§6</span>
+    <h2>Downstream Equipment Digital Twin</h2>
+    <span class="sec-sub">FBD · Sifter · Blender · Pan Coater — full process chain</span>
+  </div>
+
+  <!-- Process pipeline indicator -->
+  <div class="process-pipeline">
+    <div class="pipe-stage" id="pipe-fbd">🌡 Fluid Bed</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" id="pipe-sifter">⚙ Vibro Sifter</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" id="pipe-blender">🔄 Ribbon Blender</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" id="pipe-coater">🫧 Pan Coater</div>
+  </div>
+
+  <!-- Equipment tabs -->
+  <div class="equipment-tabs">
+    <button class="equip-tab active" onclick="showEquipPanel('fbd',this)">🌡 Fluid Bed Dryer</button>
+    <button class="equip-tab" onclick="showEquipPanel('sifter',this)">⚙ Vibro Sifter</button>
+    <button class="equip-tab" onclick="showEquipPanel('blender',this)">🔄 Ribbon Blender</button>
+    <button class="equip-tab" onclick="showEquipPanel('coater',this)">🫧 Pan Coater</button>
+  </div>
+
+  <!-- FBD Panel -->
+  <div class="equip-panel active" id="equip-panel-fbd">
+    <div class="equip-ctrl-grid">
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Bed Temperature</span><span class="ctrl-val" id="val-fbd-temp">60°C</span></div>
+        <input type="range" id="fbd-temp" min="30" max="110" value="60" step="1" oninput="app.onEquipChange('fbd')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Air Velocity (m/s)</span><span class="ctrl-val" id="val-fbd-velocity">0.8 m/s</span></div>
+        <input type="range" id="fbd-velocity" min="0.2" max="2.5" value="0.8" step="0.1" oninput="app.onEquipChange('fbd')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Drying Time (min)</span><span class="ctrl-val" id="val-fbd-time">20 min</span></div>
+        <input type="range" id="fbd-time" min="5" max="60" value="20" step="1" oninput="app.onEquipChange('fbd')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Binder Spray (g/min)</span><span class="ctrl-val" id="val-fbd-binder">5 g/min</span></div>
+        <input type="range" id="fbd-binder" min="0" max="50" value="5" step="1" oninput="app.onEquipChange('fbd')"/>
+      </div>
+    </div>
+    <div class="equip-grid" id="output-fbd"></div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">Moisture vs Bed Temperature</div><div class="chart-wrap"><canvas id="ch-fbd-moisture"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">D50 vs Binder Rate (Population Balance)</div><div class="chart-wrap"><canvas id="ch-fbd-d50"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Sifter Panel -->
+  <div class="equip-panel" id="equip-panel-sifter">
+    <div class="equip-ctrl-grid">
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Upper Mesh (μm)</span><span class="ctrl-val" id="val-sft-upper">350 μm</span></div>
+        <input type="range" id="sft-upper" min="100" max="800" value="350" step="10" oninput="app.onEquipChange('sifter')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Lower Mesh (μm)</span><span class="ctrl-val" id="val-sft-lower">90 μm</span></div>
+        <input type="range" id="sft-lower" min="25" max="300" value="90" step="5" oninput="app.onEquipChange('sifter')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Vibration Frequency (Hz)</span><span class="ctrl-val" id="val-sft-freq">35 Hz</span></div>
+        <input type="range" id="sft-freq" min="10" max="80" value="35" step="1" oninput="app.onEquipChange('sifter')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Feed Rate (kg/h)</span><span class="ctrl-val" id="val-sft-rate">80 kg/h</span></div>
+        <input type="range" id="sft-rate" min="10" max="300" value="80" step="5" oninput="app.onEquipChange('sifter')"/>
+      </div>
+    </div>
+    <div class="equip-grid" id="output-sifter"></div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">PSD Distribution (Log-Normal)</div><div class="chart-wrap"><canvas id="ch-sft-size"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Separation Efficiency vs Feed Rate</div><div class="chart-wrap"><canvas id="ch-sft-throughput"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Blender Panel -->
+  <div class="equip-panel" id="equip-panel-blender">
+    <div class="equip-ctrl-grid">
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Blender Speed (RPM)</span><span class="ctrl-val" id="val-bld-speed">30 RPM</span></div>
+        <input type="range" id="bld-speed" min="5" max="100" value="30" step="1" oninput="app.onEquipChange('blender')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Mixing Time (min)</span><span class="ctrl-val" id="val-bld-time">15 min</span></div>
+        <input type="range" id="bld-time" min="2" max="60" value="15" step="1" oninput="app.onEquipChange('blender')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Anti-caking Agent (%)</span><span class="ctrl-val" id="val-bld-anticaking">0.5%</span></div>
+        <input type="range" id="bld-anticaking" min="0" max="3" value="0.5" step="0.1" oninput="app.onEquipChange('blender')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Batch Size (kg)</span><span class="ctrl-val" id="val-bld-batch">50 kg</span></div>
+        <input type="range" id="bld-batch" min="5" max="500" value="50" step="5" oninput="app.onEquipChange('blender')"/>
+      </div>
+    </div>
+    <div class="equip-grid" id="output-blender"></div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">Blend Uniformity &amp; Lacey Index vs Time</div><div class="chart-wrap"><canvas id="ch-bld-uniformity"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">RSD vs Speed</div><div class="chart-wrap"><canvas id="ch-bld-rsd"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Coater Panel -->
+  <div class="equip-panel" id="equip-panel-coater">
+    <div class="equip-ctrl-grid">
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Pan Speed (RPM)</span><span class="ctrl-val" id="val-ctr-speed">20 RPM</span></div>
+        <input type="range" id="ctr-speed" min="5" max="40" value="20" step="1" oninput="app.onEquipChange('coater')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Coating Level (% w/w)</span><span class="ctrl-val" id="val-ctr-level">8% w/w</span></div>
+        <input type="range" id="ctr-level" min="1" max="30" value="8" step="0.5" oninput="app.onEquipChange('coater')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Spray Rate (g/min)</span><span class="ctrl-val" id="val-ctr-spray">15 g/min</span></div>
+        <input type="range" id="ctr-spray" min="5" max="60" value="15" step="1" oninput="app.onEquipChange('coater')"/>
+      </div>
+      <div class="ctrl-row">
+        <div class="ctrl-header"><span class="ctrl-label">Inlet Temperature (°C)</span><span class="ctrl-val" id="val-ctr-temp">55°C</span></div>
+        <input type="range" id="ctr-temp" min="30" max="80" value="55" step="1" oninput="app.onEquipChange('coater')"/>
+      </div>
+    </div>
+    <div class="equip-grid" id="output-coater"></div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">Film Uniformity &amp; Moisture Barrier vs Level</div><div class="chart-wrap"><canvas id="ch-ctr-film"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Final EE vs Coating Level</div><div class="chart-wrap"><canvas id="ch-ctr-ee"></canvas></div></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── §7 E-NOSE ──────────────────────────────── -->
+<section class="result-section" id="enoseSectionWrap">
+  <div class="section-header">
+    <span class="sec-num" style="border-color:rgba(224,112,255,.4);color:#e070ff">§7</span>
+    <h2>Electronic Nose (E-Nose) Fingerprinting</h2>
+    <span class="sec-sub">10 sensors · PCA · VOC profiling · Stage comparison</span>
+  </div>
+
+  <div class="enose-stage-btns">
+    <button class="enose-stage-btn" onclick="app.runENose('spray_dryer')">🔬 Spray Dryer</button>
+    <button class="enose-stage-btn" onclick="app.runENose('fbd')">🌡 Fluid Bed</button>
+    <button class="enose-stage-btn" onclick="app.runENose('sifter')">⚙ Sifter</button>
+    <button class="enose-stage-btn" onclick="app.runENose('blender')">🔄 Blender</button>
+    <button class="enose-stage-btn" onclick="app.runENose('coater')">🫧 Coater</button>
+  </div>
+
+  <div id="enoseEmpty">Run E-Nose simulation to view aroma fingerprint data.</div>
+
+  <div id="enoseContent" class="enose-content hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem" id="enoseStageLabel">—</div>
+      <button class="header-btn" id="enoseReportLabel" onclick="app.openPDFModal('enose')">📥 Export PDF</button>
+    </div>
+
+    <div class="enose-banner" id="enoseBanner"></div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card"><div class="chart-title">Sensor Radar Fingerprint</div><div class="chart-wrap"><canvas id="en-radar"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">VOC Class Distribution</div><div class="chart-wrap"><canvas id="en-voc"></canvas></div></div>
+    </div>
+    <div class="charts-grid-3 mt-2">
+      <div class="chart-card"><div class="chart-title">Aldehyde Profile</div><div class="chart-wrap"><canvas id="en-aldehydes"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Alcohol Profile</div><div class="chart-wrap"><canvas id="en-alcohols"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Terpene Profile</div><div class="chart-wrap"><canvas id="en-terpenes"></canvas></div></div>
+    </div>
+    <div class="charts-grid-3 mt-2">
+      <div class="chart-card"><div class="chart-title">Ester Profile</div><div class="chart-wrap"><canvas id="en-esters"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Ketone Profile</div><div class="chart-wrap"><canvas id="en-ketones"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Aroma Intensity Radar</div><div class="chart-wrap"><canvas id="en-intensity"></canvas></div></div>
+    </div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">Sensor Time Series</div><div class="chart-wrap"><canvas id="en-timeseries"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">PCA Score Plot</div><div class="chart-wrap"><canvas id="en-pca"></canvas></div></div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- ── §15 GCMS IMPORT ───────────────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num" style="border-color:rgba(110,168,255,.4);color:var(--accent3)">§15</span>
+    <h2>GC-MS Chromatogram Import</h2>
+    <span class="sec-sub">CSV upload · Peak detection · Class classification</span>
+  </div>
+
+  <div class="gcms-upload-area" onclick="document.getElementById('gcmsFile').click()">
+    <input type="file" id="gcmsFile" accept=".csv,.txt" style="display:none" onchange="window.feat?.onGCMSUpload(this)"/>
+    <label class="gcms-upload-label">
+      📂 Upload GC-MS CSV file (RT, Area, Compound columns)
+    </label>
+    <div class="gcms-hint">Format: Retention Time, Peak Area, Compound Name — tab or comma separated</div>
+    <div id="gcmsFileName" style="margin-top:.5rem;font-size:.72rem;color:var(--accent3)"></div>
+  </div>
+
+  <div id="gcmsOutput" class="hidden">
+    <div id="gcmsSummary"></div>
+    <div class="charts-grid-2 mt-2">
+      <div class="chart-card"><div class="chart-title">GC-MS Chromatogram</div><div class="chart-wrap"><canvas id="ch-gcms-chrom"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Compound Class Distribution</div><div class="chart-wrap"><canvas id="ch-gcms-class"></canvas></div></div>
+    </div>
+    <div id="gcmsTable" class="mt-2"></div>
+  </div>
+</section>
+
+<!-- ── §16 EXPERIMENT HISTORY ────────────────── -->
+<section class="result-section">
+  <div class="section-header">
+    <span class="sec-num" style="border-color:rgba(0,229,160,.3);color:var(--accent)">§16</span>
+    <h2>Experiment History</h2>
+    <span class="sec-sub">Multi-run comparison · Trend analysis</span>
+  </div>
+  <div class="history-panel" id="historyPanel">
+    <span style="color:var(--muted2)">No experiments saved yet. Click "Save Experiment" after each analysis run.</span>
+  </div>
+  <div class="chart-card mt-2">
+    <div class="chart-title">Multi-Run Comparison (last 8 experiments)</div>
+    <div class="chart-wrap"><canvas id="comparisonChart"></canvas></div>
+  </div>
+</section>
+
+<!-- ── Dynamic simulation sections injected by features.js ─── -->
+
+</div><!-- /container -->
+</div><!-- /#results -->
+
+<!-- ══════════════════════════════════════════════
+     PDF MODAL
+═══════════════════════════════════════════════ -->
+<div id="pdfModal" class="hidden">
+  <div class="modal-inner">
+    <div class="modal-title">📄 Generate PDF Report</div>
+    <div style="font-size:.72rem;color:var(--muted)">Select stage and enter your name:</div>
+    <div class="modal-stage-row" id="modalStageRow"></div>
+    <input type="text" id="pdfNameInput" class="modal-name-input" placeholder="Your name for watermark…"/>
+    <div class="modal-btns">
+      <button class="modal-gen-btn" onclick="generatePDF()">Download PDF</button>
+      <button class="modal-cancel-btn" onclick="closePDFModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════ -->
+<script src="app.js"></script>
+
+
+
+<script>
+/* ── Equipment panel toggle ──────────────────── */
+function showEquipPanel(id, btn) {
+  document.querySelectorAll('.equip-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.equip-tab').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('equip-panel-' + id);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+  const s = window._appState;
+  if (s && s.sim) app.onEquipChange(id);
+}
+
+
+/* ── Keyboard shortcut: Ctrl+Enter analyze ──── */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') app.analyze();
+});
+</script>
+
+</body>
+</html>
